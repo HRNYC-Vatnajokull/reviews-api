@@ -21,6 +21,8 @@ module.exports = {
           }
           delete row.pids;
           delete row.purls;
+          delete row.reported;
+          delete row.reviewer_email;
         }
         let data = {
           product: product_id,
@@ -72,12 +74,23 @@ module.exports = {
             res.json(metadata);
           })
           .catch((err) => {
-            console.log("Error at get characteristics metadata", err);
+            console.log("Error at get characteristics metadata:", err);
             res.sendStatus(500);
           });
       })
       .catch((err) => {
         console.log("Error at get ratings metadata:", err);
+        res.sendStatus(500);
+      });
+  },
+
+  post: (req, res) => {
+    model.postReview(req.params.product_id, req.body)
+      .then(() => {
+        res.sendStatus(201);
+      })
+      .catch((err) => {
+        console.log("Error at post review:", err);
         res.sendStatus(500);
       });
   }
