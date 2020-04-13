@@ -18,11 +18,11 @@ module.exports = {
     FROM reviews r \
     LEFT JOIN reviews_photos p \
     ON r.id = p.review_id \
-    WHERE r.product_id = ${product_id} \
+    WHERE r.product_id = ${product_id} AND r.reported != 1 \
     GROUP BY r.id \
+    ORDER BY ${order} \
     LIMIT ${count} \
-    OFFSET ${offset} \
-    ORDER BY ${order}`);
+    OFFSET ${offset}`);
   },
 
   getRatings: (product_id) => {
@@ -38,6 +38,26 @@ module.exports = {
     LEFT JOIN characteristics_reviews cr \
     WHERE c.product_id = ${product_id} \
     GROUP BY c.id`);
+  },
+
+  postReview: (product_id, body) => {
+    return db.query("INSERT INTO reviews (rating, product_id, body, summary, recommend, reviewer_name, reviewer_email, reported, helpfulness \
+      VALUES ($1, $2, $3, $4, $5, $6, $7, 0, 0", [body.rating, product_id, body.body, body.summary, body.recommend, body.name, body.email])
+      .then(() => {
+        return db.query("SELECT max(r.id) FROM reviews r")
+          .then(({rows}) => {
+            const insertedReviewId = rows[0].max;
+            if (body.photos && body.photos.length > 0) {
+              for (var i = 0; i < body.photos.length; i++) {
+                db.query("INSERT INTO reviews_photos (review_id, url) VALUES ($1, $2)", [insertedReviewId, body.photos[i]]);
+              }
+            }
+            for (var charId in body.characteristics) {
+              db.query("INSERT INTO characteristics_reviews (characteristic_id, review_id, value) \
+              VALUES ($1, $2, $3)", [charId, insertedReviewId, body.characteristics[charId]]);
+            }
+          });
+      });
   }
 
 }
