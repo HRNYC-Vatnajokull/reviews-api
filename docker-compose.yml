@@ -1,0 +1,15 @@
+version: '3.7'
+
+services:
+  db:
+    build: './db-setup'
+    volumes:
+      - reviews-data:/var/lib/postgresql/data
+    ports:
+      - '5431:5432'
+    environment:
+      POSTGRES_USER: mayanne
+      POSTGRES_PASSWORD: hrpassword
+
+volumes:
+  reviews-data:
