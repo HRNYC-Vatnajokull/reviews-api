@@ -3,7 +3,7 @@ const db = require("../db-setup");
 
 module.exports = {
 
-  getList: (product_id, page = 1, count = 5, sort = "relevant") => {
+  getList: (product_id, page, count, sort) => {
     const offset = (page - 1) * count;
     let order;
     if (sort === "relevant") {
@@ -23,6 +23,21 @@ module.exports = {
     LIMIT ${count} \
     OFFSET ${offset} \
     ORDER BY ${order}`);
+  },
+
+  getRatings: (product_id) => {
+    return db.query(`SELECT r.rating, COUNT(r.rating), sum(r.recommend) \
+    FROM reviews r \
+    WHERE r.product_id = ${product_id} \
+    GROUP BY r.rating`);
+  },
+
+  getChars: (product_id) => {
+    return db.query(`SELECT c.name, c.id, avg(cr.value) \
+    FROM characteristics c \
+    LEFT JOIN characteristics_reviews cr \
+    WHERE c.product_id = ${product_id} \
+    GROUP BY c.id`);
   }
-  
+
 }
