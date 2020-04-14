@@ -42,8 +42,8 @@ module.exports = {
   },
 
   postReview: (product_id, body) => {
-    return db.query("INSERT INTO reviews (rating, product_id, body, summary, recommend, reviewer_name, reviewer_email, reported, helpfulness \
-      VALUES ($1, $2, $3, $4, $5, $6, $7, 0, 0", [body.rating, product_id, body.body, body.summary, body.recommend, body.name, body.email])
+    return db.query("INSERT INTO reviews (rating, product_id, date, body, summary, recommend, reviewer_name, reviewer_email, reported, helpfulness) \
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 0, 0)", [body.rating, product_id, new Date(), body.body, body.summary, body.recommend, body.name, body.email])
       .then(() => {
         return db.query("SELECT max(r.id) FROM reviews r")
           .then(({rows}) => {
