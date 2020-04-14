@@ -93,6 +93,28 @@ module.exports = {
         console.log("Error at post review:", err);
         res.sendStatus(500);
       });
+  },
+
+  helpful: (req, res) => {
+    model.markHelpful(req.params.product_id)
+      .then(() => {
+        res.sendStatus(204);
+      })
+      .catch((err) => {
+        console.log("Error at mark review helpful:", err);
+        res.sendStatus(500);
+      });
+  },
+
+  report: (req, res) => {
+    model.report(req.params.product_id)
+      .then(() => {
+        res.sendStatus(204);
+      })
+      .catch((err) => {
+        console.log("Error at report review:", err);
+        res.sendStatus(500);
+      });
   }
 
 }

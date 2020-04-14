@@ -13,31 +13,31 @@ module.exports = {
     } else if (sort === "newest") {
       order = "r.date DESC";
     }
-    return db.query(`SELECT r.id, r.product_id, r.rating, r.date, r.summary, r.body, r.recommend, \
+    return db.query("SELECT r.id, r.product_id, r.rating, r.date, r.summary, r.body, r.recommend, \
     r.reviewer_name, r.reviewer_email, r.response, r.helpfulness, array_agg(p.id) as pids, array_agg(p.url) as purls \
     FROM reviews r \
     LEFT JOIN reviews_photos p \
     ON r.id = p.review_id \
-    WHERE r.product_id = ${product_id} AND r.reported != 1 \
+    WHERE r.product_id = $1 AND r.reported != 1 \
     GROUP BY r.id \
-    ORDER BY ${order} \
-    LIMIT ${count} \
-    OFFSET ${offset}`);
+    ORDER BY $2 \
+    LIMIT $3 \
+    OFFSET $4", [product_id, order, count, offset]);
   },
 
   getRatings: (product_id) => {
-    return db.query(`SELECT r.rating, COUNT(r.rating), sum(r.recommend) \
+    return db.query("SELECT r.rating, COUNT(r.rating), sum(r.recommend) \
     FROM reviews r \
-    WHERE r.product_id = ${product_id} \
-    GROUP BY r.rating`);
+    WHERE r.product_id = $1 \
+    GROUP BY r.rating", [product_id]);
   },
 
   getChars: (product_id) => {
-    return db.query(`SELECT c.name, c.id, avg(cr.value) \
+    return db.query("SELECT c.name, c.id, avg(cr.value) \
     FROM characteristics c \
     LEFT JOIN characteristics_reviews cr \
-    WHERE c.product_id = ${product_id} \
-    GROUP BY c.id`);
+    WHERE c.product_id = $1 \
+    GROUP BY c.id", [product_id]);
   },
 
   postReview: (product_id, body) => {
@@ -58,6 +58,16 @@ module.exports = {
             }
           });
       });
+  },
+
+  markHelpful: (product_id) => {
+    return db.query("UPDATE reviews r SET r.helpfulness = r.helpfulness + 1 \
+    WHERE r.product_id = $1", [product_id]);
+  },
+
+  report: (product_id) => {
+    return db.query("UPDATE reviews r SET r.reported = 1 \
+    WHERE r.product_id = $1", [product_id]);
   }
 
 }
