@@ -4,10 +4,10 @@ const controllers = require("./controllers.js");
 const router = express.Router();
 
 
-router.get("/reviews/:product_id/list", controllers.list);
-router.get("/reviews/:product_id/meta", controllers.meta);
-router.post("/reviews/:product_id", xyz);
-router.put("/reviews/helpful/:review_id", xyz);
-router.put("/reviews/report/:review_id", xyz);
+router.get("/:product_id/list", controllers.list);
+router.get("/:product_id/meta", controllers.meta);
+router.post("/:product_id", controllers.post);
+router.put("/helpful/:review_id", controllers.helpful);
+router.put("/report/:review_id", controllers.report);
 
 module.exports = router;
