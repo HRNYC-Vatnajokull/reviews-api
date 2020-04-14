@@ -5,20 +5,23 @@ module.exports = {
 
   list: (req, res) => {
     const product_id = req.params.product_id;
-    const page = req.body.page || 1;
-    const count = req.body.count || 5;
-    const sort = req.body.sort || "relevant";
+    const page = req.query.page || 1;
+    const count = req.query.count || 5;
+    const sort = req.query.sort || "relevant";
 
     model.getList(product_id, page, count, sort)
       .then(({rows}) => {
         for (var row of rows) {
           row.photos = [];
           for (var i = 0; i < row.pids.length; i++) {
-            row.photos[i] = {
-              id: row.pids[i],
-              url: row.purls[i]
-            };
+            if (row.pids[i] !== null) {
+              row.photos[i] = {
+                id: row.pids[i],
+                url: row.purls[i]
+              };
+            }
           }
+          delete row.product_id;
           delete row.pids;
           delete row.purls;
           delete row.reported;
@@ -42,11 +45,11 @@ module.exports = {
   meta: (req, res) => {
     const product_id = req.params.product_id;
     model.getRatings(product_id)
-      .then(({rows}) => {
-        const ratings = rows;
+      .then((rData) => {
+        const ratings = rData.rows;
         model.getChars(product_id)
-          .then(({rows2}) => {
-            const chars = rows2;
+          .then((cData) => {
+            const chars = cData.rows;
 
             let metadata = {
               product_id: product_id,
@@ -60,14 +63,14 @@ module.exports = {
 
             let total = 0;
             for (var starnum of ratings) {
-              metadata.ratings[starnum.rating] = starnum.count;
-              total += starnum.count;
-              metadata.recommended[1] += starnum.sum;
+              metadata.ratings[starnum.rating] = Number(starnum.count);
+              total += Number(starnum.count);
+              metadata.recommended[1] += Number(starnum.sum);
             }
             metadata.recommended[0] = total - metadata.recommended[1];
 
             for (var char of chars) {
-              metadata.characteristics[char.name] = {id: char.id, value: char.avg};
+              metadata.characteristics[char.name] = {id: char.id, value: Number(char.avg).toFixed(4)};
             }
 
             res.status(200);
@@ -96,7 +99,7 @@ module.exports = {
   },
 
   helpful: (req, res) => {
-    model.markHelpful(req.params.product_id)
+    model.markHelpful(req.params.review_id)
       .then(() => {
         res.sendStatus(204);
       })
@@ -107,7 +110,7 @@ module.exports = {
   },
 
   report: (req, res) => {
-    model.report(req.params.product_id)
+    model.report(req.params.review_id)
       .then(() => {
         res.sendStatus(204);
       })

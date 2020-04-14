@@ -13,16 +13,16 @@ module.exports = {
     } else if (sort === "newest") {
       order = "r.date DESC";
     }
-    return db.query("SELECT r.id, r.product_id, r.rating, r.date, r.summary, r.body, r.recommend, \
+    return db.query(`SELECT r.id AS review_id, r.product_id, r.rating, r.date, r.summary, r.body, r.recommend, \
     r.reviewer_name, r.reviewer_email, r.response, r.helpfulness, array_agg(p.id) as pids, array_agg(p.url) as purls \
     FROM reviews r \
     LEFT JOIN reviews_photos p \
     ON r.id = p.review_id \
     WHERE r.product_id = $1 AND r.reported != 1 \
     GROUP BY r.id \
-    ORDER BY $2 \
-    LIMIT $3 \
-    OFFSET $4", [product_id, order, count, offset]);
+    ORDER BY ${order} \
+    LIMIT $2 \
+    OFFSET $3`, [product_id, count, offset]);
   },
 
   getRatings: (product_id) => {
@@ -36,6 +36,7 @@ module.exports = {
     return db.query("SELECT c.name, c.id, avg(cr.value) \
     FROM characteristics c \
     LEFT JOIN characteristics_reviews cr \
+    ON c.id = cr.characteristic_id \
     WHERE c.product_id = $1 \
     GROUP BY c.id", [product_id]);
   },
@@ -60,14 +61,15 @@ module.exports = {
       });
   },
 
-  markHelpful: (product_id) => {
-    return db.query("UPDATE reviews r SET r.helpfulness = r.helpfulness + 1 \
-    WHERE r.product_id = $1", [product_id]);
+  markHelpful: (review_id) => {
+    console.log("review_id is,", review_id);
+    return db.query("UPDATE reviews SET helpfulness = helpfulness + 1 \
+    WHERE id = $1", [review_id]);
   },
 
-  report: (product_id) => {
-    return db.query("UPDATE reviews r SET r.reported = 1 \
-    WHERE r.product_id = $1", [product_id]);
+  report: (review_id) => {
+    return db.query("UPDATE reviews SET reported = 1 \
+    WHERE id = $1", [review_id]);
   }
 
 }
