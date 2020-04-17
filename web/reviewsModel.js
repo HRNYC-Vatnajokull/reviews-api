@@ -42,8 +42,12 @@ module.exports = {
   },
 
   postReview: (product_id, body) => {
+    console.log(body.body);
+    let rec = body.recommend;
+    if (rec === true) { rec = 1; }
+    if (rec === false) { rec = 0; }
     return db.query("INSERT INTO reviews (rating, product_id, date, body, summary, recommend, reviewer_name, reviewer_email, reported, helpfulness) \
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 0, 0)", [body.rating, product_id, new Date(), body.body, body.summary, body.recommend, body.name, body.email])
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 0, 0)", [body.rating, product_id, new Date(), body.body, body.summary, rec, body.name, body.email])
       .then(() => {
         return db.query("SELECT max(r.id) FROM reviews r")
           .then(({rows}) => {
