@@ -1,4 +1,19 @@
 const model = require("./reviewsModel.js");
+const redis = require("redis");
+const { promisify } = require("util");
+
+const client = redis.createClient({
+  port: "6379",
+  host: "redis://reviewsCache",
+  password: process.env.SDC_REDIS_PASSWORD
+});
+const getAsync = promisify(client.get).bind(client);
+const setexAsync = promisify(client.setex).bind(client);
+const delAsync = promisify(client.del).bind(client);
+
+client.on("error", (err) => {
+  console.log(err);
+});
 
 
 module.exports = {
@@ -44,50 +59,62 @@ module.exports = {
 
   meta: (req, res) => {
     const product_id = req.params.product_id;
-    model.getRatings(product_id)
-      .then((rData) => {
-        const ratings = rData.rows;
-        model.getChars(product_id)
-          .then((cData) => {
-            const chars = cData.rows;
 
-            let metadata = {
-              product_id: product_id,
-              ratings: {},
-              recommended: {
-                0: 0,
-                1: 0
-              },
-              characteristics: {}
-            };
-
-            let total = 0;
-            for (var starnum of ratings) {
-              metadata.ratings[starnum.rating] = Number(starnum.count);
-              total += Number(starnum.count);
-              metadata.recommended[1] += Number(starnum.sum);
-            }
-            metadata.recommended[0] = total - metadata.recommended[1];
-
-            for (var char of chars) {
-              metadata.characteristics[char.name] = {id: char.id, value: Number(char.avg).toFixed(4)};
-            }
-
-            res.status(200);
-            res.json(metadata);
-          })
-          .catch((err) => {
-            console.log("Error at get characteristics metadata:", err);
-            res.sendStatus(500);
-          });
+    getAsync(`metadata:${product_id}`)
+      .then((result) => {
+        if (result) {
+          res.status(200);
+          res.json(result);
+        } else {
+          model.getRatings(product_id)
+            .then((rData) => {
+              const ratings = rData.rows;
+              model.getChars(product_id)
+                .then((cData) => {
+                  const chars = cData.rows;
+      
+                  let metadata = {
+                    product_id: product_id,
+                    ratings: {},
+                    recommended: {
+                      0: 0,
+                      1: 0
+                    },
+                    characteristics: {}
+                  };
+      
+                  let total = 0;
+                  for (var starnum of ratings) {
+                    metadata.ratings[starnum.rating] = Number(starnum.count);
+                    total += Number(starnum.count);
+                    metadata.recommended[1] += Number(starnum.sum);
+                  }
+                  metadata.recommended[0] = total - metadata.recommended[1];
+      
+                  for (var char of chars) {
+                    metadata.characteristics[char.name] = {id: char.id, value: Number(char.avg).toFixed(4)};
+                  }
+                  setexAsync(`metadata:${product_id}`, 300, metadata);
+                  res.status(200);
+                  res.json(metadata);
+                })
+                .catch((err) => {
+                  console.log("Error at get characteristics metadata:", err);
+                  res.sendStatus(500);
+                });
+            })
+            .catch((err) => {
+              console.log("Error at get ratings metadata:", err);
+              res.sendStatus(500);
+            });
+        }
       })
-      .catch((err) => {
-        console.log("Error at get ratings metadata:", err);
-        res.sendStatus(500);
-      });
+
   },
 
   post: (req, res) => {
+    delAsync(`metadata:${req.params.product_id}`);
+
     model.postReview(req.params.product_id, req.body)
       .then(() => {
         res.sendStatus(201);
@@ -99,6 +126,8 @@ module.exports = {
   },
 
   helpful: (req, res) => {
+    delAsync(`metadata:${req.params.product_id}`);
+
     model.markHelpful(req.params.review_id)
       .then(() => {
         res.sendStatus(204);
@@ -110,6 +139,8 @@ module.exports = {
   },
 
   report: (req, res) => {
+    delAsync(`metadata:${req.params.product_id}`);
+
     model.report(req.params.review_id)
       .then(() => {
         res.sendStatus(204);

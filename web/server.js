@@ -14,4 +14,8 @@ app.use(cors());
 
 app.use("/reviews", router);
 
+app.get("/loaderio-d8c677fda81b643b9580d60d06be1268", (req, res) => {
+  res.send("loaderio-d8c677fda81b643b9580d60d06be1268");
+});
+
 app.listen(port, () => console.log(`API server listening on port ${port}...`));

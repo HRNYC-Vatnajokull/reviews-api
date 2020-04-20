@@ -1,2 +1,4 @@
 node_modules
 reviewsdb.sql
+docker-compose.yml
+Dockerfile
